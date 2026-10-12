@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Html, RoundedBox, ContactShadows, useCursor, useScroll } from '@react-three/drei'
+import { Html, RoundedBox, ContactShadows, Sparkles, useCursor, useScroll } from '@react-three/drei'
+import './toon.js'
+import './SkyMaterial.js'
 import Screen from '../ui/Screen.jsx'
 import { SCREEN, SHOTS } from './shots.js'
 import { skills, contact } from '../data.js'
@@ -29,12 +31,13 @@ export default function Room({ device }) {
 
   return (
     <group>
-      <hemisphereLight args={[day ? '#fff6e8' : '#7b88c8', day ? '#8a6a50' : '#2a2a3a', day ? 0.9 : 0.7]} />
+      {/* Cool sky fill + warm key light: the warm/cool split is a big part of the painterly look. */}
+      <hemisphereLight args={[day ? '#bfe0ff' : '#7b88c8', day ? '#a8825a' : '#2a2a3a', day ? 1.1 : 0.8]} />
       {/* Light streaming in through the window. */}
       <directionalLight
         position={[4, 5, -6]}
-        intensity={day ? 2.2 : 0.4}
-        color={day ? '#fff1d6' : '#9fb3ff'}
+        intensity={day ? 2.6 : 0.5}
+        color={day ? '#ffe2a8' : '#9fb3ff'}
         castShadow={shadows}
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-5}
@@ -57,6 +60,18 @@ export default function Room({ device }) {
       <Phone />
       <Chair />
       <Bookshelf />
+      {/* Dust motes drifting in the light (fireflies at night) */}
+      {!device.reducedMotion && (
+        <Sparkles
+          count={device.lite ? 30 : 70}
+          scale={[3.5, 2.2, 2.5]}
+          position={[1.2, 1.5, -1.6]}
+          size={day ? 2.5 : 3.5}
+          speed={0.25}
+          color={day ? '#fff2c4' : '#b6ff9a'}
+          opacity={0.8}
+        />
+      )}
       <ContactShadows position={[0, 0.002, 0]} scale={12} blur={2.5} opacity={0.35} far={3} />
     </group>
   )
@@ -69,7 +84,7 @@ function Shell() {
     <group>
       <mesh rotation-x={-Math.PI / 2} position={[2, 0, 3]} receiveShadow>
         <planeGeometry args={[12, 12]} />
-        <meshStandardMaterial color={COLORS.floor} roughness={0.8} />
+        <toonMaterial color={COLORS.floor} rim={0} />
       </mesh>
       {/* Floorboards: thin dark lines read as planks. */}
       {Array.from({ length: 23 }, (_, i) => (
@@ -80,75 +95,43 @@ function Shell() {
       ))}
       <mesh position={[2, 3, -3]} receiveShadow>
         <planeGeometry args={[12, 6]} />
-        <meshStandardMaterial color={COLORS.wall} />
+        <toonMaterial color={COLORS.wall} rim={0} />
       </mesh>
       <mesh position={[-4, 3, 3]} rotation-y={Math.PI / 2} receiveShadow>
         <planeGeometry args={[12, 6]} />
-        <meshStandardMaterial color={COLORS.wallSide} />
+        <toonMaterial color={COLORS.wallSide} rim={0} />
       </mesh>
       {/* Skirting boards */}
       <mesh position={[2, 0.06, -2.99]}>
         <boxGeometry args={[12, 0.12, 0.02]} />
-        <meshStandardMaterial color="#f7f3ec" />
+        <toonMaterial color="#f7f3ec" />
       </mesh>
       <mesh position={[-3.99, 0.06, 3]}>
         <boxGeometry args={[0.02, 0.12, 12]} />
-        <meshStandardMaterial color="#f7f3ec" />
+        <toonMaterial color="#f7f3ec" />
       </mesh>
       {/* Rug */}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.004, -1.2]} receiveShadow>
         <circleGeometry args={[1.6, 48]} />
-        <meshStandardMaterial color="#3d5a80" roughness={1} />
+        <toonMaterial color="#3d5a80" rim={0} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[0, 0.005, -1.2]}>
         <ringGeometry args={[1.35, 1.45, 48]} />
-        <meshStandardMaterial color="#e0fbfc" roughness={1} />
+        <toonMaterial color="#e0fbfc" rim={0} />
       </mesh>
     </group>
   )
 }
 
 function Window({ day }) {
-  const stars = useMemo(() => {
-    const pts = []
-    for (let i = 0; i < 40; i++) pts.push((Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.1, 0)
-    return new Float32Array(pts)
-  }, [])
+  const sky = useRef()
+  useFrame((_, delta) => sky.current && (sky.current.uniforms.uTime.value += delta))
 
   return (
     <group position={[2, 1.9, -2.98]}>
       <mesh>
         <planeGeometry args={[1.6, 1.2]} />
-        <meshBasicMaterial color={day ? '#9cd3f5' : '#0b1030'} toneMapped={false} />
-      </mesh>
-      {/* Gradient haze toward the horizon */}
-      <mesh position={[0, -0.3, 0.001]}>
-        <planeGeometry args={[1.6, 0.6]} />
-        <meshBasicMaterial color={day ? '#fde6c8' : '#2a2160'} transparent opacity={0.6} />
-      </mesh>
-      {day ? (
-        <mesh position={[0.45, 0.3, 0.002]}>
-          <circleGeometry args={[0.12, 32]} />
-          <meshBasicMaterial color={[3, 2.6, 1.6]} toneMapped={false} />
-        </mesh>
-      ) : (
-        <>
-          <mesh position={[-0.4, 0.3, 0.002]}>
-            <circleGeometry args={[0.09, 32]} />
-            <meshBasicMaterial color={[2.2, 2.2, 2]} toneMapped={false} />
-          </mesh>
-          <points>
-            <bufferGeometry>
-              <bufferAttribute attach="attributes-position" args={[stars, 3]} />
-            </bufferGeometry>
-            <pointsMaterial size={0.012} color="#ffffff" />
-          </points>
-        </>
-      )}
-      {/* Distant hills */}
-      <mesh position={[0, -0.5, 0.003]} scale={[1, 0.35, 1]}>
-        <circleGeometry args={[0.7, 32, 0, Math.PI]} />
-        <meshBasicMaterial color={day ? '#6fa86b' : '#121a2e'} />
+        <skyMaterial ref={sky} uniforms-uDay-value={day ? 1 : 0} />
       </mesh>
       {/* Frame + mullions */}
       {[
@@ -161,12 +144,12 @@ function Window({ day }) {
       ].map(([x, y, w, h], i) => (
         <mesh key={i} position={[x, y, 0.02]} castShadow>
           <boxGeometry args={[w, h, 0.05]} />
-          <meshStandardMaterial color="#f7f3ec" />
+          <toonMaterial color="#f7f3ec" />
         </mesh>
       ))}
       <mesh position={[0, -0.68, 0.08]}>
         <boxGeometry args={[1.85, 0.05, 0.18]} />
-        <meshStandardMaterial color="#f7f3ec" />
+        <toonMaterial color="#f7f3ec" />
       </mesh>
     </group>
   )
@@ -177,24 +160,24 @@ function Poster() {
     <group position={[-2.1, 2.05, -2.98]}>
       <mesh>
         <boxGeometry args={[0.9, 1.2, 0.03]} />
-        <meshStandardMaterial color="#1d1f27" />
+        <toonMaterial color="#1d1f27" />
       </mesh>
       <mesh position={[0, 0, 0.02]}>
         <planeGeometry args={[0.78, 1.08]} />
-        <meshStandardMaterial color="#f4a261" />
+        <toonMaterial color="#f4a261" />
       </mesh>
       {/* Bauhaus-ish shapes */}
       <mesh position={[0, 0.15, 0.025]}>
         <circleGeometry args={[0.24, 48]} />
-        <meshStandardMaterial color="#e63946" />
+        <toonMaterial color="#e63946" />
       </mesh>
       <mesh position={[-0.12, -0.28, 0.026]}>
         <planeGeometry args={[0.4, 0.22]} />
-        <meshStandardMaterial color="#264653" />
+        <toonMaterial color="#264653" />
       </mesh>
       <mesh position={[0.18, -0.2, 0.027]} rotation-z={Math.PI / 4}>
         <planeGeometry args={[0.16, 0.16]} />
-        <meshStandardMaterial color="#e9c46a" />
+        <toonMaterial color="#e9c46a" />
       </mesh>
     </group>
   )
@@ -212,18 +195,18 @@ function Desk() {
   return (
     <group>
       <RoundedBox args={[2.4, 0.06, 1]} radius={0.02} position={[0, 0.75, -2.3]} castShadow receiveShadow>
-        <meshStandardMaterial color={COLORS.wood} roughness={0.6} />
+        <toonMaterial color={COLORS.wood} />
       </RoundedBox>
       {legs.map(([x, z], i) => (
         <mesh key={i} position={[x, 0.36, z]} castShadow>
           <boxGeometry args={[0.05, 0.72, 0.05]} />
-          <meshStandardMaterial color={COLORS.metal} metalness={0.6} roughness={0.4} />
+          <toonMaterial color={COLORS.metal} />
         </mesh>
       ))}
       {/* Desk mat */}
       <mesh position={[0.05, 0.781, -2.05]} rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[1.3, 0.45]} />
-        <meshStandardMaterial color="#22252d" roughness={1} />
+        <toonMaterial color="#22252d" rim={0} />
       </mesh>
     </group>
   )
@@ -251,15 +234,15 @@ function Monitor() {
       {/* Stand */}
       <mesh position={[sx, 0.79, sz - 0.12]} castShadow>
         <boxGeometry args={[0.32, 0.02, 0.22]} />
-        <meshStandardMaterial color={COLORS.metal} metalness={0.7} roughness={0.3} />
+        <toonMaterial color={COLORS.metal} />
       </mesh>
       <mesh position={[sx, 0.95, sz - 0.14]} castShadow>
         <boxGeometry args={[0.06, 0.34, 0.03]} />
-        <meshStandardMaterial color={COLORS.metal} metalness={0.7} roughness={0.3} />
+        <toonMaterial color={COLORS.metal} />
       </mesh>
       {/* Bezel */}
       <RoundedBox args={[SCREEN.width + 0.06, SCREEN.height + 0.06, 0.04]} radius={0.015} position={[sx, sy, sz - 0.03]} castShadow>
-        <meshStandardMaterial color="#111216" metalness={0.4} roughness={0.5} />
+        <toonMaterial color="#111216" />
       </RoundedBox>
       {/* Panel glow behind the HTML so the screen lights up in bloom */}
       <mesh position={[sx, sy, sz - 0.009]}>
@@ -276,6 +259,8 @@ function Monitor() {
         portal={portal}
         position={[sx, sy, sz]}
         distanceFactor={df}
+        // Sit below the text panels until zoomed in, then come to the front so it can be clicked.
+        zIndexRange={active ? [100, 50] : [0, 0]}
         style={{ pointerEvents: active ? 'auto' : 'none' }}
         // Let the wheel keep scrolling the page while the cursor is over the screen.
         onWheel={(e) => (scroll.el.scrollTop += e.deltaY)}
@@ -306,16 +291,16 @@ function Keyboard() {
   return (
     <group>
       <RoundedBox args={[0.74, 0.02, 0.24]} radius={0.008} position={[0, 0.793, -2.045]} castShadow>
-        <meshStandardMaterial color="#2c2f38" />
+        <toonMaterial color="#2c2f38" />
       </RoundedBox>
       <instancedMesh ref={setup} args={[undefined, undefined, cols * rows]} castShadow>
         <boxGeometry args={[0.04, 0.012, 0.04]} />
-        <meshStandardMaterial color="#e8e4dc" />
+        <toonMaterial color="#e8e4dc" />
       </instancedMesh>
       {/* Mouse */}
       <mesh position={[0.52, 0.8, -2.12]} scale={[0.6, 0.35, 1]} castShadow>
         <sphereGeometry args={[0.05, 24, 16]} />
-        <meshStandardMaterial color="#e8e4dc" />
+        <toonMaterial color="#e8e4dc" />
       </mesh>
     </group>
   )
@@ -326,16 +311,16 @@ function Lamp({ day }) {
     <group position={[-0.9, 0.78, -2.6]}>
       <mesh castShadow>
         <cylinderGeometry args={[0.1, 0.12, 0.03, 32]} />
-        <meshStandardMaterial color={COLORS.accent} />
+        <toonMaterial color={COLORS.accent} />
       </mesh>
       <mesh position={[0.06, 0.22, 0.04]} rotation-z={-0.35} castShadow>
         <cylinderGeometry args={[0.012, 0.012, 0.46]} />
-        <meshStandardMaterial color={COLORS.metal} metalness={0.6} />
+        <toonMaterial color={COLORS.metal} />
       </mesh>
       <group position={[0.17, 0.44, 0.1]} rotation={[0.5, 0, -0.9]}>
         <mesh castShadow>
           <coneGeometry args={[0.1, 0.16, 32, 1, true]} />
-          <meshStandardMaterial color={COLORS.accent} side={THREE.DoubleSide} />
+          <toonMaterial color={COLORS.accent} side={THREE.DoubleSide} />
         </mesh>
         <mesh position={[0, -0.04, 0]}>
           <sphereGeometry args={[0.035, 16, 16]} />
@@ -363,15 +348,15 @@ function Mug({ reducedMotion }) {
     <group position={[0.85, 0.78, -2.05]}>
       <mesh position={[0, 0.06, 0]} castShadow>
         <cylinderGeometry args={[0.045, 0.04, 0.12, 32]} />
-        <meshStandardMaterial color="#f1faee" />
+        <toonMaterial color="#f1faee" />
       </mesh>
       <mesh position={[0, 0.115, 0]} rotation-x={-Math.PI / 2}>
         <circleGeometry args={[0.04, 32]} />
-        <meshStandardMaterial color="#4a2c1d" />
+        <toonMaterial color="#4a2c1d" />
       </mesh>
       <mesh position={[0.045, 0.06, 0]} rotation-z={-Math.PI / 2}>
         <torusGeometry args={[0.028, 0.008, 12, 24, Math.PI]} />
-        <meshStandardMaterial color="#f1faee" />
+        <toonMaterial color="#f1faee" />
       </mesh>
       {[0, 1, 2, 3].map((i) => (
         <mesh key={i} ref={(el) => (puffs.current[i] = el)} position={[0, 0.2 + i * 0.05, 0]}>
@@ -396,12 +381,12 @@ function Plant() {
     <group position={[1.0, 0.78, -2.6]}>
       <mesh position={[0, 0.07, 0]} castShadow>
         <cylinderGeometry args={[0.08, 0.06, 0.14, 24]} />
-        <meshStandardMaterial color="#c97b57" />
+        <toonMaterial color="#c97b57" />
       </mesh>
       {leaves.map(({ a, tilt, h }, i) => (
         <mesh key={i} position={[Math.cos(a) * 0.03, 0.14 + h / 2, Math.sin(a) * 0.03]} rotation={[Math.sin(a) * tilt, 0, -Math.cos(a) * tilt]} castShadow>
           <coneGeometry args={[0.025, h, 6]} />
-          <meshStandardMaterial color={i % 2 ? '#3a7d44' : '#56a05f'} flatShading />
+          <toonMaterial color={i % 2 ? '#3a7d44' : '#56a05f'} flatShading />
         </mesh>
       ))}
     </group>
@@ -421,7 +406,7 @@ function Phone() {
       onClick={() => (location.href = `mailto:${contact.email}`)}
     >
       <RoundedBox args={[0.09, 0.012, 0.18]} radius={0.005} castShadow>
-        <meshStandardMaterial color="#15161a" />
+        <toonMaterial color="#15161a" />
       </RoundedBox>
       <mesh position={[0, 0.0065, 0]} rotation-x={-Math.PI / 2}>
         <planeGeometry args={[0.08, 0.165]} />
@@ -442,23 +427,23 @@ function Chair() {
     <group position={[0.05, 0, -1.25]} rotation-y={0.25}>
       <mesh position={[0, 0.48, 0]} castShadow>
         <cylinderGeometry args={[0.26, 0.26, 0.06, 32]} />
-        <meshStandardMaterial color="#3d405b" />
+        <toonMaterial color="#3d405b" />
       </mesh>
       <mesh position={[0, 0.25, 0]} castShadow>
         <cylinderGeometry args={[0.025, 0.025, 0.45]} />
-        <meshStandardMaterial color={COLORS.metal} metalness={0.7} />
+        <toonMaterial color={COLORS.metal} />
       </mesh>
       {[0, 1, 2, 3, 4].map((i) => {
         const a = (i / 5) * Math.PI * 2
         return (
           <mesh key={i} position={[Math.cos(a) * 0.14, 0.04, Math.sin(a) * 0.14]} rotation-y={-a}>
             <boxGeometry args={[0.28, 0.03, 0.04]} />
-            <meshStandardMaterial color={COLORS.metal} metalness={0.7} />
+            <toonMaterial color={COLORS.metal} />
           </mesh>
         )
       })}
       <RoundedBox args={[0.5, 0.55, 0.06]} radius={0.03} position={[0, 0.82, 0.24]} rotation-x={-0.12} castShadow>
-        <meshStandardMaterial color="#3d405b" />
+        <toonMaterial color="#3d405b" />
       </RoundedBox>
     </group>
   )
@@ -494,13 +479,13 @@ function Bookshelf() {
       {shelfYs.map((y, i) => (
         <mesh key={i} position={[0, y, 0]} castShadow receiveShadow>
           <boxGeometry args={[depth, 0.04, length]} />
-          <meshStandardMaterial color={COLORS.wood} />
+          <toonMaterial color={COLORS.wood} />
         </mesh>
       ))}
       {[-1, 1].map((s) => (
         <mesh key={s} position={[0, 1.15, (s * length) / 2]} castShadow>
           <boxGeometry args={[depth, 2.3, 0.04]} />
-          <meshStandardMaterial color={COLORS.woodDark} />
+          <toonMaterial color={COLORS.woodDark} />
         </mesh>
       ))}
       {/* Picture light so the books read at night */}
@@ -511,7 +496,7 @@ function Bookshelf() {
       {/* A little globe on the top shelf */}
       <mesh position={[0, 2.38, 0.4]} castShadow>
         <sphereGeometry args={[0.1, 24, 24]} />
-        <meshStandardMaterial color="#4f9dde" roughness={0.4} />
+        <toonMaterial color="#4f9dde" />
       </mesh>
     </group>
   )
@@ -536,7 +521,7 @@ function Book({ name, color, z, y, w, h, lean }) {
         onPointerOut={() => setHovered(false)}
       >
         <boxGeometry args={[0.28, h, w]} />
-        <meshStandardMaterial color={color} roughness={0.7} />
+        <toonMaterial color={color} />
         {hovered && (
           <Html portal={portal} position={[0.2, h / 2 + 0.06, 0]} center className="book-label">
             {name}

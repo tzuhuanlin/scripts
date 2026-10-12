@@ -11,6 +11,7 @@ Everything in the room is built from code, so there are no model files to downlo
 - **Scroll-driven camera** with eased transitions between shots, plus subtle mouse parallax
 - **Interactive monitor**: real HTML rendered on the 3D screen, with project list and detail views
 - **Bookshelf of skills**: one book per skill, and hovering pulls it off the shelf
+- **Breath of the Wild–style look**: cel shading with cool blue shadows and a warm rim light (`src/scene/toon.js`), a painted landscape shader in the window (`src/scene/SkyMaterial.js`), and drifting light motes (fireflies at night)
 - **Live day/night window** based on the visitor's local time (preview with `?time=day` / `?time=night`)
 - **Clickable phone** that opens your email
 - Bloom and vignette post-processing, soft shadows, and instanced keyboard keys

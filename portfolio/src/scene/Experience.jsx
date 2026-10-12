@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { ScrollControls, Scroll, useScroll, PerformanceMonitor } from '@react-three/drei'
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette, HueSaturation } from '@react-three/postprocessing'
 import Room from './Room.jsx'
 import Overlay from '../ui/Overlay.jsx'
 import { SHOTS } from './shots.js'
@@ -24,7 +24,7 @@ export default function Experience({ device, wireframe }) {
       <fog attach="fog" args={[bg, 12, 30]} />
       {/* Drop resolution if the frame rate struggles. */}
       <PerformanceMonitor onDecline={() => setDpr(1)} />
-      <ScrollControls pages={SHOTS.length} damping={device.reducedMotion ? 0 : 0.2}>
+      <ScrollControls pages={SHOTS.length} damping={device.reducedMotion ? 0 : 0.2} style={{ zIndex: 1 }}>
         <CameraRig reducedMotion={device.reducedMotion} />
         <Room device={device} />
         <Scroll html style={{ width: '100%' }}>
@@ -33,7 +33,8 @@ export default function Experience({ device, wireframe }) {
       </ScrollControls>
       {!device.lite && (
         <EffectComposer multisampling={4}>
-          <Bloom mipmapBlur luminanceThreshold={1} intensity={0.8} />
+          <Bloom mipmapBlur luminanceThreshold={0.95} intensity={1.1} radius={0.8} />
+          <HueSaturation saturation={0.12} />
           <Vignette offset={0.3} darkness={0.6} />
         </EffectComposer>
       )}
