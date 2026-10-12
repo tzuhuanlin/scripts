@@ -1,7 +1,7 @@
 import { profile, skills, projects, contact } from '../data.js'
 
 // Plain, fast, accessible version of the portfolio — also the fallback when WebGL is unavailable.
-export default function SimpleView({ canGo3D }) {
+export default function SimpleView({ canGo3D, onShow3D }) {
   return (
     <div className="simple">
       <header>
@@ -10,7 +10,9 @@ export default function SimpleView({ canGo3D }) {
         <p>{profile.tagline}</p>
         {canGo3D && (
           <p>
-            <a href="#">← Back to the 3D version</a>
+            <button type="button" className="link-button" onClick={onShow3D}>
+              ← Back to the 3D version
+            </button>
           </p>
         )}
       </header>
